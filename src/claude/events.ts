@@ -2,6 +2,7 @@ import type { WechatApiOptions } from "../wechat/api.js";
 import { sendTextMessage, sendTyping } from "../wechat/api.js";
 import { logger } from "../utils/logger.js";
 import { TypingStatus } from "../wechat/types.js";
+import type { StreamEvent } from "./cli.js";
 
 const MAX_MESSAGE_LENGTH = 4000;
 const THINKING_PREVIEW_LENGTH = 300;
@@ -73,66 +74,38 @@ export function createEventHandler(
   contextToken: string | undefined,
   typingTicket: string | undefined,
 ) {
-  return async (event: Record<string, unknown>): Promise<void> => {
-    const eventType = event.type as string;
-
+  return async (event: StreamEvent): Promise<void> => {
     try {
-      if (eventType === "stream_event") {
-        const rawEvent = event.event as Record<string, unknown>;
-        const rawType = rawEvent?.type as string;
-
-        if (rawType === "content_block_start") {
-          const contentBlock = rawEvent.content_block as Record<string, unknown>;
-          if (contentBlock?.type === "tool_use") {
-            const toolName = contentBlock.name as string;
-            const toolInput = (contentBlock.input ?? {}) as Record<string, unknown>;
-
-            if (typingTicket) {
-              await sendTyping({
-                ...apiOpts,
-                body: {
-                  ilink_user_id: toUserId,
-                  typing_ticket: typingTicket,
-                  status: TypingStatus.TYPING,
-                },
-              });
-            }
-
-            await sendTextMessage({
-              ...apiOpts,
-              toUserId,
-              text: formatToolSummary(toolName, toolInput),
-              contextToken,
-            });
-          }
+      if (event.type === "tool_use_start") {
+        if (typingTicket) {
+          await sendTyping({
+            ...apiOpts,
+            body: {
+              ilink_user_id: toUserId,
+              typing_ticket: typingTicket,
+              status: TypingStatus.TYPING,
+            },
+          });
         }
 
-        if (rawType === "content_block_delta") {
-          const delta = rawEvent.delta as Record<string, unknown>;
-          if (delta?.type === "thinking_delta") {
-            const thinking = String(delta.thinking ?? "").slice(0, THINKING_PREVIEW_LENGTH);
-            if (thinking) {
-              await sendTextMessage({
-                ...apiOpts,
-                toUserId,
-                text: `💭 ${thinking}...`,
-                contextToken,
-              });
-            }
-          }
-        }
-      }
-
-      if (eventType === "permission_request") {
-        const toolName = event.toolName as string;
-        const input = (event.input ?? {}) as Record<string, unknown>;
-        const summary = formatToolSummary(toolName, input);
         await sendTextMessage({
           ...apiOpts,
           toUserId,
-          text: `🔑 权限请求: ${summary}\n\n回复 y 允许 / n 拒绝`,
+          text: formatToolSummary(event.toolName, event.toolInput),
           contextToken,
         });
+      }
+
+      if (event.type === "thinking_delta") {
+        const thinking = event.thinking.slice(0, THINKING_PREVIEW_LENGTH);
+        if (thinking) {
+          await sendTextMessage({
+            ...apiOpts,
+            toUserId,
+            text: `💭 ${thinking}...`,
+            contextToken,
+          });
+        }
       }
     } catch (err) {
       logger.error(`Event handler error: ${String(err)}`);

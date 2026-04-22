@@ -4,12 +4,9 @@ import { logger } from "../utils/logger.js";
 import {
   sessionKey,
   getOrCreateSession,
-  getSession,
   clearSession,
-  updateSessionConfig,
   runClaudeQuery,
   abortSession,
-  resolveApproval,
   type ClaudeSessionConfig,
 } from "../claude/bridge.js";
 import { createEventHandler, sendFinalReply } from "../claude/events.js";
@@ -104,7 +101,7 @@ export async function routeMessage(
     typingTicket,
   ) as (event: unknown) => Promise<void>;
 
-  if (session.abortController) {
+  if (session.childProcess) {
     abortSession(key);
     await sendFinalReply(
       apiOpts,
@@ -112,23 +109,6 @@ export async function routeMessage(
       "⚠️ 已中断上一条任务，正在处理新消息...",
       msg.context_token,
     );
-  }
-
-  if (
-    session.pendingApproval &&
-    (userText === "y" || userText === "yes")
-  ) {
-    resolveApproval(key, true);
-    await sendFinalReply(apiOpts, userId, "✅ 已允许", msg.context_token);
-    return;
-  }
-  if (
-    session.pendingApproval &&
-    (userText === "n" || userText === "no")
-  ) {
-    resolveApproval(key, false);
-    await sendFinalReply(apiOpts, userId, "❌ 已拒绝", msg.context_token);
-    return;
   }
 
   logger.info(`Routing message from ${userId}: ${userText.slice(0, 100)}`);

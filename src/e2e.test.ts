@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseCommand } from "./router/commands.js";
 import { splitMessage, formatToolSummary } from "./claude/events.js";
+import { parseStreamLine, buildCliArgs } from "./claude/cli.js";
 import { aesEcbEncrypt, aesEcbDecrypt } from "./wechat/cdn.js";
 
 describe("End-to-end data flow", () => {
@@ -36,5 +37,23 @@ describe("End-to-end data flow", () => {
     const encrypted = aesEcbEncrypt(data, key);
     const decrypted = aesEcbDecrypt(encrypted, key);
     expect(decrypted.toString()).toBe("test image data for e2e");
+  });
+
+  it("CLI args construction → stream parsing", () => {
+    const args = buildCliArgs({
+      prompt: "hello",
+      cwd: "/tmp",
+      model: "sonnet",
+      permissionMode: "default",
+      sessionId: "sess-abc",
+    });
+    expect(args).toContain("--resume");
+    expect(args).toContain("sess-abc");
+
+    const events = parseStreamLine(
+      '{"type":"content_block_start","index":0,"content_block":{"type":"tool_use","name":"Bash","input":{"command":"npm test"}}}'
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe("tool_use_start");
   });
 });

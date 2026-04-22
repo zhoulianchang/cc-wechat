@@ -101,11 +101,11 @@ Switch permission mode with `/permission <mode>`:
 ## How It Works
 
 ```
-WeChat (phone) <-> ilink bot API <-> Node.js daemon <-> Claude Agent SDK (local)
+WeChat (phone) <-> ilink bot API <-> Node.js daemon <-> Claude CLI (local)
 ```
 
 1. The daemon long-polls the WeChat ilink bot API for new messages
-2. Messages are forwarded to Claude Code via `@anthropic-ai/claude-agent-sdk`
+2. Messages are forwarded to Claude Code via Claude CLI subprocess
 3. Tool calls and thinking summaries are pushed to WeChat in real-time as Claude works
 4. Permission requests are sent to WeChat; users approve/deny with y/n
 5. Replies are split and sent back to WeChat with automatic rate-limit handling
@@ -136,7 +136,7 @@ npm run test:watch  # Test watch mode
 
 - **TypeScript** — Type safety
 - **Node.js >= 18** — Built-in fetch, crypto; zero external HTTP dependencies
-- **@anthropic-ai/claude-agent-sdk** — Claude Code SDK
+- **Claude CLI** — Invoke local claude command-line tool via subprocess
 - **Vitest** — Unit testing (42 test cases)
 
 ## Security

@@ -101,11 +101,11 @@ npm run daemon -- logs     # 查看日志路径
 ## 工作原理
 
 ```
-微信（手机） ←→ ilink bot API ←→ Node.js 守护进程 ←→ Claude Agent SDK（本地）
+微信（手机） ←→ ilink bot API ←→ Node.js 守护进程 ←→ Claude CLI（本地）
 ```
 
 1. 守护进程通过长轮询监听微信 ilink bot API 的新消息
-2. 消息通过 `@anthropic-ai/claude-agent-sdk` 转发给 Claude Code
+2. 消息通过 Claude CLI 子进程转发给 Claude Code
 3. 工具调用和思维摘要在 Claude 工作时实时推送回微信
 4. 权限请求发送到微信，用户通过 y/n 审批
 5. 回复分片发送回微信，自动处理限频
@@ -136,7 +136,7 @@ npm run test:watch  # 测试监听模式
 
 - **TypeScript** — 类型安全
 - **Node.js >= 18** — 内置 fetch、crypto，零外部 HTTP 依赖
-- **@anthropic-ai/claude-agent-sdk** — Claude Code SDK
+- **Claude CLI** — 通过子进程调用本地 claude 命令行工具
 - **Vitest** — 单元测试（42 个测试用例）
 
 ## 安全

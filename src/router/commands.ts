@@ -33,7 +33,7 @@ register("help", async () => {
     "/clear — 清除当前会话",
     "/reset — 完全重置（会话+配置）",
     "/model <name> — 切换模型 (opus/sonnet/haiku)",
-    "/permission <mode> — 切换权限模式 (default/acceptEdits/plan/auto)",
+    "/permission <mode> — 切换权限模式 (default/acceptEdits/plan/auto)，直接控制 CLI 行为",
     "/prompt [text] — 查看/设置系统提示词",
     "/status — 当前会话状态",
     "/cwd [path] — 查看/切换工作目录",

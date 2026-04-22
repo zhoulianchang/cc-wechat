@@ -19,8 +19,6 @@ describe("buildCliArgs", () => {
     expect(args).toContain("--include-partial-messages");
     expect(args).toContain("--model");
     expect(args).toContain("claude-sonnet-4-6");
-    expect(args).toContain("--cwd");
-    expect(args).toContain("/tmp/project");
     expect(args).toContain("--permission-mode");
     expect(args).toContain("default");
   });

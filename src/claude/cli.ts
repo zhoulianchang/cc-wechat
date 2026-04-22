@@ -26,7 +26,6 @@ export function buildCliArgs(opts: CliRunOptions): string[] {
     "--verbose",
     "--include-partial-messages",
     "--model", opts.model,
-    "--cwd", opts.cwd,
   ];
 
   if (opts.permissionMode === "auto") {
@@ -209,8 +208,13 @@ export async function runClaudeCli(
   if (killTimer) clearTimeout(killTimer);
   logger.info(`Claude process exited with code ${exitCode}, session=${sessionId}`);
 
-  if (exitCode !== 0 && !finalText) {
-    finalText = stderrText.trim() || `Claude 进程异常退出 (code=${exitCode})`;
+  if (exitCode !== 0) {
+    if (stderrText.trim()) {
+      logger.error(`Claude stderr: ${stderrText.trim()}`);
+    }
+    if (!finalText) {
+      finalText = stderrText.trim() || `Claude 进程异常退出 (code=${exitCode})`;
+    }
   }
 
   return { sessionId, finalText };

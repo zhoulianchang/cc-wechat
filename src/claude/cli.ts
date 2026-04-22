@@ -131,3 +131,87 @@ export function parseStreamLine(line: string): StreamEvent[] {
 
   return [];
 }
+
+const SIGKILL_TIMEOUT_MS = 5_000;
+
+export async function runClaudeCli(
+  opts: CliRunOptions,
+  onEvent?: (event: StreamEvent) => void,
+): Promise<CliRunResult> {
+  const args = buildCliArgs(opts);
+  logger.info(`Spawning claude: claude ${args.slice(0, 6).join(" ")}...`);
+
+  const child = spawn("claude", args, {
+    cwd: opts.cwd,
+    stdio: ["pipe", "pipe", "pipe"],
+    env: { ...process.env },
+  });
+
+  let sessionId = "";
+  let finalText = "";
+  let stderrText = "";
+
+  const stderrRl = createInterface({ input: child.stderr! });
+  stderrRl.on("line", (line) => {
+    stderrText += line + "\n";
+    logger.debug(`claude stderr: ${line}`);
+  });
+
+  const stdoutRl = createInterface({ input: child.stdout! });
+  stdoutRl.on("line", (line) => {
+    const events = parseStreamLine(line);
+    for (const evt of events) {
+      if (evt.type === "init") {
+        sessionId = evt.sessionId;
+      }
+      if (evt.type === "assistant_text" && evt.text) {
+        finalText = evt.text;
+      }
+      if (evt.type === "result") {
+        sessionId = evt.sessionId;
+        if (evt.subtype === "success" && evt.result) {
+          finalText = evt.result;
+        }
+      }
+      onEvent?.(evt);
+    }
+  });
+
+  // abort signal 处理
+  let killTimer: ReturnType<typeof setTimeout> | undefined;
+  if (opts.abortSignal) {
+    const onAbort = () => {
+      logger.info("Abort signal received, killing claude process");
+      child.kill("SIGTERM");
+      killTimer = setTimeout(() => {
+        if (!child.killed) {
+          logger.warn("Claude process did not exit, sending SIGKILL");
+          child.kill("SIGKILL");
+        }
+      }, SIGKILL_TIMEOUT_MS);
+    };
+    if (opts.abortSignal.aborted) {
+      onAbort();
+    } else {
+      opts.abortSignal.addEventListener("abort", onAbort, { once: true });
+    }
+  }
+
+  // 等待子进程退出
+  const exitCode = await new Promise<number | null>((resolve) => {
+    child.on("close", resolve);
+    child.on("error", (err) => {
+      logger.error(`Claude process error: ${String(err)}`);
+      resolve(-1);
+    });
+  });
+
+  if (killTimer) clearTimeout(killTimer);
+  logger.info(`Claude process exited with code ${exitCode}, session=${sessionId}`);
+
+  if (exitCode !== 0 && !finalText) {
+    finalText = stderrText.trim() || `Claude 进程异常退出 (code=${exitCode})`;
+  }
+
+  return { sessionId, finalText };
+}

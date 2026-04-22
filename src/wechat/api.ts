@@ -122,10 +122,15 @@ export async function sendTextMessage(
     ...opts,
     body: {
       msg: {
+        from_user_id: "",
         to_user_id: opts.toUserId,
+        client_id: `bot-${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`,
+        message_type: 2,
+        message_state: 2,
         context_token: opts.contextToken,
         item_list: [{ type: 1, text_item: { text: opts.text } }],
       },
+      base_info: { channel_version: "1.0.3" },
     },
   });
 }

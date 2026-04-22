@@ -138,8 +138,13 @@ export interface GetUpdatesResp {
   longpolling_timeout_ms?: number;
 }
 
+export interface BaseInfo {
+  channel_version?: string;
+}
+
 export interface SendMessageReq {
   msg?: WeixinMessage;
+  base_info?: BaseInfo;
 }
 
 export interface SendMessageResp {}

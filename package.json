@@ -16,7 +16,6 @@
     "daemon": "node --enable-source-maps dist/daemon/index.js"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.100",
     "qrcode-terminal": "^0.12.0"
   },
   "devDependencies": {
